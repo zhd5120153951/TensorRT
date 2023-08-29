@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33927.249
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "yolo-wights", "yolo-wights.vcxproj", "{DFF4376E-5874-4A62-AEB0-C96729476DE0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DFF4376E-5874-4A62-AEB0-C96729476DE0}.Debug|x64.ActiveCfg = Debug|x64
+		{DFF4376E-5874-4A62-AEB0-C96729476DE0}.Debug|x64.Build.0 = Debug|x64
+		{DFF4376E-5874-4A62-AEB0-C96729476DE0}.Debug|x86.ActiveCfg = Debug|Win32
+		{DFF4376E-5874-4A62-AEB0-C96729476DE0}.Debug|x86.Build.0 = Debug|Win32
+		{DFF4376E-5874-4A62-AEB0-C96729476DE0}.Release|x64.ActiveCfg = Release|x64
+		{DFF4376E-5874-4A62-AEB0-C96729476DE0}.Release|x64.Build.0 = Release|x64
+		{DFF4376E-5874-4A62-AEB0-C96729476DE0}.Release|x86.ActiveCfg = Release|Win32
+		{DFF4376E-5874-4A62-AEB0-C96729476DE0}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EF743EA8-6BAE-41A1-BFB0-9A61530E20E5}
+	EndGlobalSection
+EndGlobal
