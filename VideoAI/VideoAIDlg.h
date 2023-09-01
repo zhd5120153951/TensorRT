@@ -21,7 +21,7 @@
 #include "pthread.h"
 #pragma comment(lib,"pthreadVC2.lib")
 
-static bool m_ExitThread = false;
+static bool m_ExitThread = false;//推出线程的标志变量
 // CVideoAIDlg 对话框
 class CVideoAIDlg : public CDialogEx
 {
@@ -66,7 +66,10 @@ protected:
 public:
 	// rtsp地址
 	CEdit m_inputURL;
-	CWinThread* pThreadPlay;
+	CWinThread* pThreadProcess;//推理线程
+	CWinThread* pThreadPlayVideo;//播放本地视频线程
+	CWinThread* pThreadPlayWecam;//播放本地摄像头
+	CWinThread* pThreadPlayRtsp;//播放RTSP视频
 	afx_msg void OnClickedBtnStop();
 
 	afx_msg void OnTimer(UINT_PTR nIDEvent);

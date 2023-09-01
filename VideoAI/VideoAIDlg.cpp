@@ -62,10 +62,16 @@ CVideoAIDlg::CVideoAIDlg(CWnd* pParent /*=nullptr*/)
 	m_yolov5_fire = false;
 	m_thresh = 0.25;
 	hasfire = false;
+
+	//初始化yolov5
+	detector.init();
 }
 CVideoAIDlg::~CVideoAIDlg()
 {
-	delete pThreadPlay;
+	delete pThreadProcess;
+	delete pThreadPlayVideo;
+	delete pThreadPlayWecam;
+	delete pThreadPlayRtsp;
 }
 //------------------这两个涉及CvvImage版本太旧-------------------
 //新版opencv的Mat格式显示函数--CvvImage--老旧
@@ -339,6 +345,120 @@ UINT Thread_Play(LPVOID lpParam)
 	return 0;
 }
 
+//线程处理函数--推理所有类型，图像、本地视频、本地摄像头、rtsp流
+UINT Thread_Process(LPVOID lpParam)
+{
+	CVideoAIDlg* dlg = (CVideoAIDlg*)lpParam;
+	char matParam[10];
+	int index = 1;
+	std::vector<cv::Mat>vecFrame;//存放输入vector
+	std::vector<std::vector<yolov5::Detection>> detectionBatch;//检测结果vector
+	//处理线程一次就要遍历所有操作(对应功能点)
+	while (1)
+	{
+		//水平翻转
+		if (dlg->m_flipH)
+		{
+			dlg->m_Mat_Process = dlg->m_Mat1.clone();//深拷贝
+			cv::flip(dlg->m_Mat_Process, dlg->m_Mat_Process, 1);//0--垂直;1--水平
+			dlg->DrawMat(dlg->m_Mat_Process, IDC_RESULT, true);
+		}
+		int curSel = dlg->m_listModel.GetCurSel();
+		switch (curSel)
+		{
+		case 0://火焰检测
+		{
+			if (m_ExitThread)
+			{
+				break;
+			}
+			
+			//火焰识别
+			if (dlg->m_yolov5_fire)
+			{
+				yolov5::Result ret = dlg->detector.loadEngine("yolov5-fire-727.engine");
+				if (ret)
+				{
+					AfxMessageBox("加载火焰模型失败，请确认后重试！");
+					break;
+				}
+				
+				dlg->m_Mat_Process = dlg->m_Mat1.clone();//深拷贝
+				//ReadRtspBatch(dlg->detector,dlg->m_Mat_Process,dlg->m_thresh,dlg->hasfire,index);
+
+				for (int i = 0; i < 3; i++)//行--高
+				{
+					for (int j = 0; j < 3; j++)//列--宽
+					{
+						cv::Rect rect(j * 640, i * 360, 640, 360);
+						vecFrame.emplace_back(dlg->m_Mat_Process(rect).clone());
+					}
+				}
+				dlg->detector.detectBatch(vecFrame, &detectionBatch, 0);
+				for (int i = 0; i < detectionBatch.size(); i++)
+				{
+					for (int j = 0; j < detectionBatch[i].size(); j++)
+					{
+						if (detectionBatch[i][j].classId() == 0 && detectionBatch[i][j].score() > dlg->m_thresh)
+						{
+							dlg->hasfire = true;
+							cv::imwrite("source/" + std::to_string(index) + ".jpg", vecFrame[i]);
+							cv::rectangle(vecFrame[i], detectionBatch[i][j].boundingBox(), cv::Scalar(0, 0, 255), 1);
+							//得分和类别暂时不画
+							//保存
+							if (dlg->hasfire)
+							{
+								cv::imwrite("save/" + std::to_string(index) + ".jpg", vecFrame[i]);
+								index++;
+							}
+							//绘图
+							//dlg->DrawMat2HDC(vecFrame[i], IDC_RESULT);
+							dlg->DrawMat(vecFrame[i], IDC_RESULT, true);
+						}
+					}
+				}
+			}	
+			dlg->hasfire = false;
+			dlg->m_yolov5_fire = false;
+			vecFrame.clear();//清空当次的输入vector
+			detectionBatch.clear();//清空档次的检测结果
+		}
+		break;
+		case 1://安全帽识别
+		{
+
+		}
+		break;
+		case 2://行人检测
+		{
+
+		}
+		break;
+		case 3://烟雾检测
+		{
+
+		}
+		break;
+		case 4://行人计数
+		{
+
+		}
+		break;
+		default:
+			dlg->detector.loadEngine("yolov5-fire-727.engine");//这里应该由选择的算法模型来加载对应的engine--目前只有一种就默认
+			while (1)
+			{
+				if (m_ExitThread)
+				{
+					break;//停止推理
+				}
+			}
+			break;
+		}
+	}
+	return 0;
+}
+
 //播放本地摄像头线程--执行函数
 UINT Thread_Play_Video(LPVOID lpParam)
 {
@@ -573,11 +693,14 @@ BOOL CVideoAIDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
+	//设置主界面初始信息
 	m_inputURL.SetWindowText("rtsp://");
 	m_inputURL.SetFocus();
 	
 	m_listModel.SetCurSel(0);
+
+	//启动推理线程
+	pThreadProcess = AfxBeginThread(Thread_Process, this);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -688,29 +811,24 @@ void CVideoAIDlg::OnClickedBtnImg()
 	pFileDlg->m_ofn.lpstrFilter = "image files (*.jpg) \0*.jpg\0image files (*.bmp)\0*.bmp\0All files (*.*) \0*.*";
 	if (pFileDlg->DoModal() != IDOK)
 	{
-		return;
+		return;//放弃选择图像
 	}
 	CString path = pFileDlg->GetPathName();//获取图像完整路径
 	m_Mat1 = cv::imread(LPCSTR(path), 1);  //opencv读取后是[B,G,R]
 	if (!m_Mat1.data)
 	{
-		MessageBox("读取失败");
-		return;//读取失败
+		MessageBox("读取失败");//读取失败
+		return;
 	}
-	//DrawMat2HDC(m_Mat1,IDC_DISPLAY);//把图像画到控件上
-	//DrawMat(m_Mat1, IDC_DISPLAY, true);
-	//////显示图像参数
-	//char matParam[10];
-	//_itoa(m_Mat1.cols, matParam, 10);//列--宽
-	//SetDlgItemText(IDC_VIDEO_WIDTH, matParam);
-	//_itoa(m_Mat1.rows, matParam, 10);//行--高
-	//SetDlgItemText(IDC_VIDEO_HEIGHT, matParam);
-
-	//正确做法--主界面一起来就应该一直运行推理函数，通过判断哪个指令按钮按下就直接推理对应的类型(本地图、本地视频、本地摄像头、网络视频)
-	m_yolov5_fire = true;
-	detector.init();
-	yolov5::Result ret = detector.loadEngine("yolov5-fire-727.engine");
-	pThreadPlay = AfxBeginThread(Thread_Play_Image, this);
+	//DrawMat2HDC(m_Mat1,IDC_DISPLAY);//把图像画到控件上(已弃用)
+	DrawMat(m_Mat1, IDC_DISPLAY, true);
+	//显示图像参数
+	char matParam[10];
+	_itoa(m_Mat1.cols, matParam, 10);//列--宽
+	SetDlgItemText(IDC_VIDEO_WIDTH, matParam);
+	_itoa(m_Mat1.rows, matParam, 10);//行--高
+	SetDlgItemText(IDC_VIDEO_HEIGHT, matParam);
+	SetDlgItemText(IDC_VIDEO_FPS, "0");//图像没有帧率
 	
 	delete pFileDlg;
 }
@@ -740,7 +858,7 @@ void CVideoAIDlg::OnClickedBtnCamera()
 		//Invalidate(TRUE);
 		//设置定时器--不用定时器--用多线程
 		//SetTimer(1, 40, NULL);//40ms--对应25帧/s
-		pThreadPlay = AfxBeginThread(Thread_Play_Video, this);
+		pThreadPlayWecam = AfxBeginThread(Thread_Play_Video, this);
 	}
 }
 
@@ -765,18 +883,7 @@ void CVideoAIDlg::OnClickedBtnVideo()
 	}
 	else
 	{
-		//capture >> m_Mat1;
-		//char matParam[10];
-		//_itoa(m_Mat1.cols, matParam, 10);
-		//SetDlgItemText(IDC_VIDEO_WIDTH, matParam);
-		//_itoa(m_Mat1.rows, matParam, 10);
-		//SetDlgItemText(IDC_VIDEO_HEIGHT, matParam);
-		//SetDlgItemText(IDC_VIDEO_FPS, LPCTSTR("25"));
-		////刷新显示区
-		//Invalidate(TRUE);
-		//设置定时器
-		//SetTimer(1, 40, NULL);//25帧/s
-		pThreadPlay = AfxBeginThread(Thread_Play_Video, this);
+		pThreadPlayVideo = AfxBeginThread(Thread_Play_Video, this);
 	}
 	delete pFileDlg;
 }
@@ -798,7 +905,7 @@ void CVideoAIDlg::OnClickedBtnRtsp()
 {
 	capture.open("rtsp://admin:jiankong123@192.168.23.15:554/Streaming/Channels/101");
 	//rtsp用多线程播放--不要用定时器
-	pThreadPlay = AfxBeginThread(Thread_Play, this);
+	pThreadPlayRtsp = AfxBeginThread(Thread_Play, this);
 
 }
 
