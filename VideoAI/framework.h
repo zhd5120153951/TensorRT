@@ -27,7 +27,7 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include <afxcontrolbars.h>     // MFC 支持功能区和控制条
-
+#include "Regkey.h"
 #if false
 
 #include "cv.h"
