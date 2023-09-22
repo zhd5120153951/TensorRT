@@ -263,84 +263,93 @@ UINT Thread_Play(LPVOID lpParam)
 {
 	CVideoAIDlg* dlg = (CVideoAIDlg*)lpParam;
 	char matParam[10];
-	int fps = 1;
-	int index = 1;
+	//int fps = 1;
+	//int index = 1;
 
-	std::vector<cv::Mat>vecFrame;
-	std::vector<std::vector<yolov5::Detection>> detectionBatch;
-	while (1)
-	{
-		if (m_ExitThread)
-		{
-			break;
-		}
-		if (fps % 25 != 0)
-		{
-			fps++;
-			continue;
-		}
-		dlg->capture >> dlg->m_Mat1;//主线程中的
-		
-		//视频参数
-		_itoa(dlg->m_Mat1.cols, matParam, 10);
-		dlg->GetDlgItem(IDC_VIDEO_WIDTH)->SetWindowText(matParam);
-		_itoa(dlg->m_Mat1.rows, matParam, 10);
-		dlg->GetDlgItem(IDC_VIDEO_HEIGHT)->SetWindowText(matParam);
-		dlg->GetDlgItem(IDC_VIDEO_FPS)->SetWindowText("25");
-		//dlg->DrawMat2HDC(dlg->m_Mat1, IDC_DISPLAY);
-		dlg->DrawMat2(dlg->m_Mat1, IDC_DISPLAY, false);
-		//视频水平翻转
-		if (dlg->m_flipH)
-		{
-			dlg->m_Mat_Process = dlg->m_Mat1.clone();//深拷贝
-			cv::flip(dlg->m_Mat_Process, dlg->m_Mat_Process, 1);//0--垂直;1--水平
-			dlg->DrawMat(dlg->m_Mat_Process, IDC_RESULT, true);
-		}
-		//火焰识别
-		if (dlg->m_yolov5_fire)
-		{
-			dlg->m_Mat_Process = dlg->m_Mat1.clone();//深拷贝
-			//ReadRtspBatch(dlg->detector,dlg->m_Mat_Process,dlg->m_thresh,dlg->hasfire,index);
+	//视频参数
+	_itoa(dlg->m_Mat1.cols, matParam, 10);
+	dlg->GetDlgItem(IDC_VIDEO_WIDTH)->SetWindowText(matParam);
+	_itoa(dlg->m_Mat1.rows, matParam, 10);
+	dlg->GetDlgItem(IDC_VIDEO_HEIGHT)->SetWindowText(matParam);
+	dlg->GetDlgItem(IDC_VIDEO_FPS)->SetWindowText("25");
+	//dlg->DrawMat2HDC(dlg->m_Mat1, IDC_DISPLAY);
+	dlg->DrawMat2(dlg->m_Mat1, IDC_DISPLAY, false);
 
-			for (int i = 0; i < 3; i++)//行--高
-			{
-				for (int j = 0; j < 3; j++)//列--宽
-				{
-					cv::Rect rect(j * 640, i * 360, 640, 360);
-					vecFrame.emplace_back(dlg->m_Mat_Process(rect).clone());
-				}
-			}
-			dlg->detector.detectBatch(vecFrame, &detectionBatch, 0);
-			for (int i = 0; i < detectionBatch.size(); i++)
-			{
-				for (int j = 0; j < detectionBatch[i].size(); j++)
-				{
-					if (detectionBatch[i][j].classId() == 0 && detectionBatch[i][j].score() > dlg->m_thresh)
-					{
-						dlg->hasfire = true;
-						cv::imwrite("source/" + std::to_string(index) + ".jpg", vecFrame[i]);
-						cv::rectangle(vecFrame[i], detectionBatch[i][j].boundingBox(), cv::Scalar(0, 0, 255), 1);
-						//得分和类别暂时不画
-						//保存
-						if (dlg->hasfire)
-						{
-							cv::imwrite("save/" + std::to_string(index) + ".jpg", vecFrame[i]);
-							index++;
-						}
-						//绘图
-						//dlg->DrawMat2HDC(vecFrame[i], IDC_RESULT);
-						dlg->DrawMat(vecFrame[i], IDC_RESULT, false);
-					}
-				}
-			}
-		}
-		dlg->hasfire = false;
-		vecFrame.clear();
-		//m_Mat1.release();//先释放m_Mat1
-		//m_Mat1 = m_Mat_Process.clone();
-		
-		fps = fps % 25 + 1;
-	}
+	//std::vector<cv::Mat>vecFrame;
+	//std::vector<std::vector<yolov5::Detection>> detectionBatch;
+	//while (1)
+	//{
+	//	if (m_ExitThread)
+	//	{
+	//		break;
+	//	}
+	//	if (fps % 25 != 0)
+	//	{
+	//		fps++;
+	//		continue;
+	//	}
+	//	dlg->capture >> dlg->m_Mat1;//主线程中的
+	//	
+	//	//视频参数
+	//	_itoa(dlg->m_Mat1.cols, matParam, 10);
+	//	dlg->GetDlgItem(IDC_VIDEO_WIDTH)->SetWindowText(matParam);
+	//	_itoa(dlg->m_Mat1.rows, matParam, 10);
+	//	dlg->GetDlgItem(IDC_VIDEO_HEIGHT)->SetWindowText(matParam);
+	//	dlg->GetDlgItem(IDC_VIDEO_FPS)->SetWindowText("25");
+	//	//dlg->DrawMat2HDC(dlg->m_Mat1, IDC_DISPLAY);
+	//	dlg->DrawMat2(dlg->m_Mat1, IDC_DISPLAY, false);
+	//	//视频水平翻转
+	//	if (dlg->m_flipH)
+	//	{
+	//		dlg->m_Mat_Process = dlg->m_Mat1.clone();//深拷贝
+	//		cv::flip(dlg->m_Mat_Process, dlg->m_Mat_Process, 1);//0--垂直;1--水平
+	//		dlg->DrawMat(dlg->m_Mat_Process, IDC_RESULT, true);
+	//	}
+	//	//火焰识别
+	//	if (dlg->m_yolov5_fire)
+	//	{
+	//		dlg->m_Mat_Process = dlg->m_Mat1.clone();//深拷贝
+	//		//ReadRtspBatch(dlg->detector,dlg->m_Mat_Process,dlg->m_thresh,dlg->hasfire,index);
+
+	//		for (int i = 0; i < 3; i++)//行--高
+	//		{
+	//			for (int j = 0; j < 3; j++)//列--宽
+	//			{
+	//				cv::Rect rect(j * 640, i * 360, 640, 360);
+	//				vecFrame.emplace_back(dlg->m_Mat_Process(rect).clone());
+	//			}
+	//		}
+	//		dlg->detector.detectBatch(vecFrame, &detectionBatch, 0);
+	//		for (int i = 0; i < detectionBatch.size(); i++)
+	//		{
+	//			for (int j = 0; j < detectionBatch[i].size(); j++)
+	//			{
+	//				if (detectionBatch[i][j].classId() == 0 && detectionBatch[i][j].score() > dlg->m_thresh)
+	//				{
+	//					dlg->hasfire = true;
+	//					cv::imwrite("source/" + std::to_string(index) + ".jpg", vecFrame[i]);
+	//					cv::rectangle(vecFrame[i], detectionBatch[i][j].boundingBox(), cv::Scalar(0, 0, 255), 1);
+	//					//得分和类别暂时不画
+	//					//保存
+	//					if (dlg->hasfire)
+	//					{
+	//						cv::imwrite("save/" + std::to_string(index) + ".jpg", vecFrame[i]);
+	//						index++;
+	//					}
+	//					//绘图
+	//					//dlg->DrawMat2HDC(vecFrame[i], IDC_RESULT);
+	//					dlg->DrawMat(vecFrame[i], IDC_RESULT, false);
+	//				}
+	//			}
+	//		}
+	//	}
+	//	dlg->hasfire = false;
+	//	vecFrame.clear();
+	//	//m_Mat1.release();//先释放m_Mat1
+	//	//m_Mat1 = m_Mat_Process.clone();
+	//	
+	//	fps = fps % 25 + 1;
+	//}
 	
 	return 0;
 }
@@ -858,7 +867,9 @@ void CVideoAIDlg::OnClickedBtnCamera()
 		//Invalidate(TRUE);
 		//设置定时器--不用定时器--用多线程
 		//SetTimer(1, 40, NULL);//40ms--对应25帧/s
-		pThreadPlayWecam = AfxBeginThread(Thread_Play_Video, this);
+
+		//pThreadPlayWecam = AfxBeginThread(Thread_Play_Video, this);
+		//播放本地视频
 	}
 }
 
@@ -883,7 +894,7 @@ void CVideoAIDlg::OnClickedBtnVideo()
 	}
 	else
 	{
-		pThreadPlayVideo = AfxBeginThread(Thread_Play_Video, this);
+		//播放视频
 	}
 	delete pFileDlg;
 }
@@ -903,10 +914,21 @@ void CVideoAIDlg::OnClickedBtnExit()
 
 void CVideoAIDlg::OnClickedBtnRtsp()
 {
-	capture.open("rtsp://admin:jiankong123@192.168.23.15:554/Streaming/Channels/101");
-	//rtsp用多线程播放--不要用定时器
-	pThreadPlayRtsp = AfxBeginThread(Thread_Play, this);
-
+	CString rtsp_url = "";
+	m_inputURL.GetWindowText(rtsp_url);
+	if (rtsp_url == "rtsp://")
+	{
+		AfxMessageBox("请先输入rtsp地址!");
+		return;
+	}
+	else
+	{
+		std::string str_url(rtsp_url.GetString());
+		capture.open(str_url);
+		//rtsp用多线程播放--不要用定时器
+		//pThreadPlayRtsp = AfxBeginThread(Thread_Play, this);
+		//播放rtsp视频
+	}
 }
 
 
