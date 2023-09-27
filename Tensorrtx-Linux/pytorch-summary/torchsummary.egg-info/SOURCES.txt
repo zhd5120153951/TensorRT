@@ -1,0 +1,9 @@
+LICENSE
+README.md
+setup.py
+torchsummary/__init__.py
+torchsummary/torchsummary.py
+torchsummary.egg-info/PKG-INFO
+torchsummary.egg-info/SOURCES.txt
+torchsummary.egg-info/dependency_links.txt
+torchsummary.egg-info/top_level.txt
